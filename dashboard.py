@@ -6,7 +6,17 @@ from loader import load_all_parks, PARKS
 
 st.set_page_config(page_title="PV Parks Dashboard", layout="wide")
 
-FREQ_MAP = {"Monthly": "ME", "Quarterly": "QE", "Yearly": "YE"}
+FREQ_MAP = {
+    "15 min":    "15min",
+    "Hourly":    "h",
+    "Daily":     "D",
+    "Weekly":    "W",
+    "Monthly":   "ME",
+    "Quarterly": "QE",
+    "Yearly":    "YE",
+}
+# Period hours for fixed-duration buckets (used for capacity factor)
+SLOT_HOURS = {"15min": 0.25, "h": 1.0, "D": 24.0, "W": 168.0}
 PARK_COLORS = px.colors.qualitative.Safe
 
 
@@ -122,7 +132,7 @@ with st.sidebar:
     else:
         start_date, end_date = min_date, max_date
 
-    agg_option = st.radio("Aggregation", list(FREQ_MAP.keys()), index=0)
+    agg_option = st.selectbox("Aggregation", list(FREQ_MAP.keys()), index=4)
     freq = FREQ_MAP[agg_option]
 
 if not selected_parks:
@@ -176,8 +186,9 @@ with tab1:
         "capacity_kw": ("capacity_kw", "first"),
     })
     cf_agg["production_mwh"] = cf_agg["production_kwh"] / 1000
-    cf_agg["period_days"] = cf_agg["period"].dt.days_in_month if freq == "ME" else None
-    if freq == "ME":
+    if freq in SLOT_HOURS:
+        cf_agg["period_hours"] = SLOT_HOURS[freq]
+    elif freq == "ME":
         cf_agg["period_hours"] = cf_agg["period"].dt.days_in_month * 24
     elif freq == "QE":
         cf_agg["period_hours"] = cf_agg["period"].apply(
@@ -218,22 +229,25 @@ with tab1:
     fig1.update_layout(legend_title_text="Park")
     st.plotly_chart(fig1, width="stretch")
 
-    # Pivot table: park × period
-    st.subheader("Production (MWh) — detailed table")
-    pivot = cf_agg.pivot_table(
-        index="park_name", columns="period", values="production_mwh", aggfunc="sum"
-    )
-    pivot.columns = [
-        c.strftime("%b %Y") if freq == "ME" else
-        (f"Q{((c.month - 1) // 3) + 1} {c.year}" if freq == "QE" else str(c.year))
-        for c in pivot.columns
-    ]
-    pivot.index.name = "Park"
-    pivot_display = pivot.round(1)
-    st.dataframe(
-        pivot_display.style.background_gradient(cmap="YlGn", axis=None),
-        width="stretch",
-    )
+    # Pivot table: park × period (only sensible for coarser aggregations)
+    if freq in ("ME", "QE", "YE", "W"):
+        st.subheader("Production (MWh) — detailed table")
+        pivot = cf_agg.pivot_table(
+            index="park_name", columns="period", values="production_mwh", aggfunc="sum"
+        )
+        if freq == "ME":
+            pivot.columns = [c.strftime("%b %Y") for c in pivot.columns]
+        elif freq == "QE":
+            pivot.columns = [f"Q{((c.month - 1) // 3) + 1} {c.year}" for c in pivot.columns]
+        elif freq == "YE":
+            pivot.columns = [str(c.year) for c in pivot.columns]
+        else:
+            pivot.columns = [c.strftime("%d %b %Y") for c in pivot.columns]
+        pivot.index.name = "Park"
+        st.dataframe(
+            pivot.round(1).style.background_gradient(cmap="YlGn", axis=None),
+            width="stretch",
+        )
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # TAB 2 — REVENUE
