@@ -1,0 +1,18 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.xlsx
+*.pdf
+*.msg
+
+# Source files already merged into master CSVs - not needed in deployment
+*/DAM prices - *.csv
+*/PAYMENTS - *.csv
+
+# Internal files
+CLAUDE.md
+ΚΩΔΙΚΟΙ ΠΡΟΣΒΑΣΗΣ ONLINE ΠΛΑΤΦΟΡΜΑ FORENA.xlsx
+ΟΔΗΓΙΕΣ ΠΛΑΤΦΟΡΜΑΣ ΠΕΛΑΤΩΝ FORENA.pdf
+ΔΙΑΚΟΠΕΣ ΛΕΙΤΟΥΡΓΙΑΣ ΣΤΑΘΜΩΝ_FORENA.xlsx
+Παραγωγές Πάρκων Τηλεμετρία FORENA ΔΑΠΠΕΠ.xlsx
