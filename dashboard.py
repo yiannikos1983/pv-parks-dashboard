@@ -529,15 +529,37 @@ with tab4:
         low_pct = len(low_slots) / len(prod_slots) * 100
 
         total_prod = prod_slots["production_kwh"].sum()
-        w_avg_price = (
+        w_avg_dam = (
             (prod_slots["production_kwh"] * prod_slots["dam_price"]).sum() / total_prod
             if total_prod > 0 else float("nan")
         )
 
-        c1, c2, c3 = st.columns(3)
-        kpi(c1, "Slots with negative price", f"{neg_pct:.1f}% ({len(neg_slots):,} slots)")
-        kpi(c2, "Slots with price < €20/MWh", f"{low_pct:.1f}% ({len(low_slots):,} slots)")
-        kpi(c3, "Production-weighted avg price", f"€ {w_avg_price:.2f}/MWh")
+        # Implied net price: total actual payments ÷ total production (slots where payment known)
+        pay_slots = prod_slots.dropna(subset=["payment_eur"])
+        total_pay_prod = pay_slots["production_kwh"].sum()
+        implied_net = (
+            pay_slots["payment_eur"].sum() / (total_pay_prod / 1000)
+            if total_pay_prod > 0 else float("nan")
+        )
+
+        c1, c2, c3, c4 = st.columns([2.2, 2.2, 1.5, 1.5])
+
+        with c1:
+            kpi(c1, "Implied net price", f"€ {implied_net:.2f}/MWh")
+            st.caption(
+                "Total actual payments ÷ total production (MWh). "
+                "Represents what you effectively received per MWh after the FORENA fee "
+                "and all other deductions. Should track ~€1.80/MWh below the DAM price."
+            )
+        with c2:
+            kpi(c2, "Production-weighted avg DAM price", f"€ {w_avg_dam:.2f}/MWh")
+            st.caption(
+                "Each slot's DAM price weighted by the MWh produced in that slot. "
+                "Reflects the gross market price earned per MWh injected — before fees. "
+                "Higher than simple average because peak production coincides with peak prices."
+            )
+        kpi(c3, "Slots with negative price", f"{neg_pct:.1f}%\n({len(neg_slots):,} slots)")
+        kpi(c4, "Slots with price < €20/MWh", f"{low_pct:.1f}%\n({len(low_slots):,} slots)")
 
         st.divider()
 
