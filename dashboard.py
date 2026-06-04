@@ -266,7 +266,7 @@ with tab2:
     df2 = df.copy()
     df2["expected_eur"] = (
         df2["production_kwh"].fillna(0) / 1000 * df2["dam_price"].fillna(0)
-    ).clip(lower=0)
+    )
     df2["delta_eur"] = df2["payment_eur"].fillna(0) - df2["expected_eur"]
 
     total_actual = df2["payment_eur"].sum()
