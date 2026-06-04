@@ -229,25 +229,26 @@ with tab1:
     fig1.update_layout(legend_title_text="Park")
     st.plotly_chart(fig1, width="stretch")
 
-    # Pivot table: park × period (only sensible for coarser aggregations)
-    if freq in ("ME", "QE", "YE", "W"):
-        st.subheader("Production (MWh) — detailed table")
-        pivot = cf_agg.pivot_table(
-            index="park_name", columns="period", values="production_mwh", aggfunc="sum"
-        )
-        if freq == "ME":
-            pivot.columns = [c.strftime("%b %Y") for c in pivot.columns]
-        elif freq == "QE":
-            pivot.columns = [f"Q{((c.month - 1) // 3) + 1} {c.year}" for c in pivot.columns]
-        elif freq == "YE":
-            pivot.columns = [str(c.year) for c in pivot.columns]
-        else:
-            pivot.columns = [c.strftime("%d %b %Y") for c in pivot.columns]
-        pivot.index.name = "Park"
-        st.dataframe(
-            pivot.round(1).style.background_gradient(cmap="YlGn", axis=None),
-            width="stretch",
-        )
+    # Pivot table: park × period
+    st.subheader("Production (MWh) — detailed table")
+    pivot = cf_agg.pivot_table(
+        index="park_name", columns="period", values="production_mwh", aggfunc="sum"
+    )
+    col_fmt = {
+        "ME":    lambda c: c.strftime("%b %Y"),
+        "QE":    lambda c: f"Q{((c.month - 1) // 3) + 1} {c.year}",
+        "YE":    lambda c: str(c.year),
+        "W":     lambda c: c.strftime("%d %b %Y"),
+        "D":     lambda c: c.strftime("%d %b %Y"),
+        "h":     lambda c: c.strftime("%d %b %H:00"),
+        "15min": lambda c: c.strftime("%d %b %H:%M"),
+    }
+    pivot.columns = [col_fmt[freq](c) for c in pivot.columns]
+    pivot.index.name = "Park"
+    st.dataframe(
+        pivot.round(1).style.background_gradient(cmap="YlGn", axis=None),
+        width="stretch",
+    )
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # TAB 2 — REVENUE
