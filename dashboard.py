@@ -534,11 +534,16 @@ with tab4:
             if total_prod > 0 else float("nan")
         )
 
-        # Implied net price: total actual payments ÷ total production (slots where payment known)
+        # Both price KPIs computed over the same slots: production + DAM price + payment all present.
+        # This ensures implied net and DAM price are directly comparable (same denominator).
         pay_slots = prod_slots.dropna(subset=["payment_eur"])
         total_pay_prod = pay_slots["production_kwh"].sum()
         implied_net = (
             pay_slots["payment_eur"].sum() / (total_pay_prod / 1000)
+            if total_pay_prod > 0 else float("nan")
+        )
+        w_avg_dam = (
+            (pay_slots["production_kwh"] * pay_slots["dam_price"]).sum() / total_pay_prod
             if total_pay_prod > 0 else float("nan")
         )
 
@@ -554,9 +559,10 @@ with tab4:
         with c2:
             kpi(c2, "Production-weighted avg DAM price", f"€ {w_avg_dam:.2f}/MWh")
             st.caption(
-                "Each slot's DAM price weighted by the MWh produced in that slot. "
+                "Each slot's DAM price weighted by the MWh produced in that slot, "
+                "computed over the same slots as the implied net price. "
                 "Reflects the gross market price earned per MWh injected — before fees. "
-                "Higher than simple average because peak production coincides with peak prices."
+                "The gap vs implied net price is the effective fee per MWh."
             )
         kpi(c3, "Slots with negative price", f"{neg_pct:.1f}%\n({len(neg_slots):,} slots)")
         kpi(c4, "Slots with price < €20/MWh", f"{low_pct:.1f}%\n({len(low_slots):,} slots)")
