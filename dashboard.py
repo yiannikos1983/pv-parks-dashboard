@@ -18,6 +18,7 @@ FREQ_MAP = {
 # Period hours for fixed-duration buckets (used for capacity factor)
 SLOT_HOURS = {"15min": 0.25, "h": 1.0, "D": 24.0, "W": 168.0}
 PARK_COLORS = px.colors.qualitative.Safe
+FORENA_FEE = 1.80  # €/MWh — all-inclusive representation fee (imbalance + HEnEx + ADMIE + margin)
 
 
 # ── Data loading ────────────────────────────────────────────────────────────
@@ -274,7 +275,7 @@ with tab1:
 with tab2:
     df2 = df.copy()
     df2["expected_eur"] = (
-        df2["production_kwh"].fillna(0) / 1000 * df2["dam_price"].fillna(0)
+        df2["production_kwh"].fillna(0) / 1000 * (df2["dam_price"].fillna(0) - FORENA_FEE)
     )
     df2["delta_eur"] = df2["payment_eur"].fillna(0) - df2["expected_eur"]
 
@@ -285,7 +286,7 @@ with tab2:
 
     c1, c2, c3 = st.columns(3)
     kpi(c1, "Actual payments", f"€ {total_actual:,.2f}")
-    kpi(c2, "Theoretical revenue", f"€ {total_expected:,.2f}")
+    kpi(c2, f"Net theoretical (DAM − €{FORENA_FEE}/MWh fee)", f"€ {total_expected:,.2f}")
     kpi(
         c3,
         "Discrepancy",
@@ -316,7 +317,7 @@ with tab2:
     )
     fig2.update_layout(
         barmode="group",
-        title="Actual vs theoretical revenue",
+        title=f"Actual vs net theoretical revenue  (DAM − €{FORENA_FEE}/MWh FORENA fee)",
         xaxis_title="",
         yaxis_title="Revenue (€)",
         legend_title_text="",
@@ -384,12 +385,18 @@ with tab2:
         )
         monthly_ip["implied_price"] = monthly_ip["prod_x_implied"] / monthly_ip["production_kwh"]
         monthly_ip["dam_price_avg"] = monthly_ip["prod_x_dam"]     / monthly_ip["production_kwh"]
+        monthly_ip["net_theoretical"] = monthly_ip["dam_price_avg"] - FORENA_FEE
 
         fig_ip = go.Figure()
         fig_ip.add_scatter(
             x=monthly_ip["period"], y=monthly_ip["dam_price_avg"],
             mode="lines+markers", name="DAM price",
             line=dict(color="#999999", dash="dot"),
+        )
+        fig_ip.add_scatter(
+            x=monthly_ip["period"], y=monthly_ip["net_theoretical"],
+            mode="lines+markers", name=f"Expected (DAM − €{FORENA_FEE}/MWh)",
+            line=dict(color="#e9c46a", dash="dashdot"),
         )
         fig_ip.add_scatter(
             x=monthly_ip["period"], y=monthly_ip["implied_price"],
@@ -410,6 +417,11 @@ with tab2:
             color_discrete_sequence=PARK_COLORS,
         )
         fig_box.add_hline(y=0, line_dash="dash", line_color="black", opacity=0.4)
+        fig_box.add_hline(
+            y=-FORENA_FEE, line_dash="dot", line_color="red", opacity=0.7,
+            annotation_text=f"Expected −€{FORENA_FEE}/MWh",
+            annotation_position="top right",
+        )
         st.plotly_chart(fig_box, width="stretch")
 
         if "Aiginio" in selected_parks:
