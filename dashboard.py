@@ -246,7 +246,7 @@ with tab1:
     pivot.columns = [col_fmt[freq](c) for c in pivot.columns]
     pivot.index.name = "Park"
     st.dataframe(
-        pivot.round(1).style.background_gradient(cmap="YlGn", axis=None),
+        pivot.style.background_gradient(cmap="YlGn", axis=None).format("{:.2f}"),
         width="stretch",
     )
 
