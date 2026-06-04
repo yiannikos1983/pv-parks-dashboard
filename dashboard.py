@@ -206,11 +206,19 @@ with tab1:
         cf_agg["production_mwh"] / (cf_agg["capacity_kw"] / 1000 * cf_agg["period_hours"]) * 100
     ).clip(upper=100)
 
-    avg_cf = cf_agg["capacity_factor_pct"].mean()
+    # Capacity-weighted CF per period (parks with no data in a period are naturally absent
+    # from cf_agg and therefore don't affect that period's weighted average)
+    cf_agg["cf_x_cap"] = cf_agg["capacity_factor_pct"] * cf_agg["capacity_kw"]
+    period_cf = cf_agg.groupby("period").agg(
+        cf_x_cap_sum=("cf_x_cap", "sum"),
+        capacity_sum=("capacity_kw", "sum"),
+    )
+    period_cf["weighted_cf"] = period_cf["cf_x_cap_sum"] / period_cf["capacity_sum"]
+    avg_cf = period_cf["weighted_cf"].mean()
 
     c1, c2, c3 = st.columns(3)
     kpi(c1, "Total production", f"{total_mwh:,.1f} MWh")
-    kpi(c2, "Avg capacity factor", f"{avg_cf:.1f}%")
+    kpi(c2, "Capacity-weighted avg CF", f"{avg_cf:.1f}%")
     kpi(c3, "Data availability", f"{data_avail:.1f}%")
 
     st.divider()
