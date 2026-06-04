@@ -62,9 +62,11 @@ def _parse_kwh(series: pd.Series) -> pd.Series:
 
 
 def _parse_eur(series: pd.Series) -> pd.Series:
-    """Parse '€ 123.45' strings to float. Returns NaN for empty cells."""
+    """Parse '€ 123.45' / '-€ 1.00' strings to float. Returns NaN for empty cells."""
     return pd.to_numeric(
-        series.astype(str).str.replace("€", "", regex=False).str.strip(),
+        series.astype(str)
+              .str.replace("€", "", regex=False)
+              .str.replace(r"\s+", "", regex=True),  # collapse whitespace so '-€ 1.00' -> '-1.00'
         errors="coerce",
     )
 

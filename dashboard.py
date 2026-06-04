@@ -274,8 +274,9 @@ with tab1:
 
 with tab2:
     df2 = df.copy()
+    # expected = production_MWh × (DAM_price − fee); 0 when no production; NaN when DAM price missing
     df2["expected_eur"] = (
-        df2["production_kwh"].fillna(0) / 1000 * (df2["dam_price"].fillna(0) - FORENA_FEE)
+        df2["production_kwh"].fillna(0) / 1000 * (df2["dam_price"] - FORENA_FEE)
     )
     df2["delta_eur"] = df2["payment_eur"].fillna(0) - df2["expected_eur"]
 
