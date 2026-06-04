@@ -325,9 +325,13 @@ with tab2:
     )
     st.plotly_chart(fig2, width="stretch")
 
-    # Anomaly table
+    # Anomaly table — only rows where both DAM price and actual payment are known
     st.subheader("Settlement anomalies  (|actual − expected| > €0.10)")
-    anomalies = df2[df2["delta_eur"].abs() > 0.10][
+    anomalies = df2[
+        df2["payment_eur"].notna()
+        & df2["dam_price"].notna()
+        & (df2["delta_eur"].abs() > 0.10)
+    ][
         ["timestamp", "park_name", "production_kwh", "dam_price", "expected_eur", "payment_eur", "delta_eur"]
     ].copy()
     anomalies["production_kwh"] = anomalies["production_kwh"].round(3)
