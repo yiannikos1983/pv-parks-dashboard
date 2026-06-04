@@ -334,6 +334,82 @@ with tab2:
     else:
         st.dataframe(anomalies.reset_index(drop=True), width="stretch")
 
+    st.divider()
+
+    # ── Implied captured price vs DAM price ───────────────────────────────────
+    st.subheader("Implied captured price vs DAM price")
+
+    ip = df2[
+        (df2["production_kwh"] > 0.5)
+        & df2["dam_price"].notna()
+        & df2["payment_eur"].notna()
+    ].copy()
+    ip["implied_price"] = ip["payment_eur"] / (ip["production_kwh"] / 1000)
+    ip["spread"] = ip["implied_price"] - ip["dam_price"]
+
+    if ip.empty:
+        st.info("Insufficient data for implied price analysis.")
+    else:
+        total_prod = ip["production_kwh"].sum()
+        w_implied = (ip["implied_price"] * ip["production_kwh"]).sum() / total_prod
+        w_dam    = (ip["dam_price"]     * ip["production_kwh"]).sum() / total_prod
+        w_spread = w_implied - w_dam
+
+        c1, c2, c3 = st.columns(3)
+        kpi(c1, "Avg implied price (prod-weighted)", f"€ {w_implied:.2f}/MWh")
+        kpi(c2, "Avg DAM price (prod-weighted)",     f"€ {w_dam:.2f}/MWh")
+        kpi(c3, "Avg spread (implied − DAM)",        f"€ {w_spread:+.2f}/MWh")
+
+        # Monthly production-weighted implied vs DAM price
+        ip["prod_x_implied"] = ip["implied_price"] * ip["production_kwh"]
+        ip["prod_x_dam"]     = ip["dam_price"]     * ip["production_kwh"]
+        monthly_ip = (
+            ip.groupby(pd.Grouper(key="timestamp", freq=freq))
+            .agg(
+                prod_x_implied=("prod_x_implied", "sum"),
+                prod_x_dam=("prod_x_dam",     "sum"),
+                production_kwh=("production_kwh",  "sum"),
+            )
+            .reset_index()
+            .rename(columns={"timestamp": "period"})
+        )
+        monthly_ip["implied_price"] = monthly_ip["prod_x_implied"] / monthly_ip["production_kwh"]
+        monthly_ip["dam_price_avg"] = monthly_ip["prod_x_dam"]     / monthly_ip["production_kwh"]
+
+        fig_ip = go.Figure()
+        fig_ip.add_scatter(
+            x=monthly_ip["period"], y=monthly_ip["dam_price_avg"],
+            mode="lines+markers", name="DAM price",
+            line=dict(color="#999999", dash="dot"),
+        )
+        fig_ip.add_scatter(
+            x=monthly_ip["period"], y=monthly_ip["implied_price"],
+            mode="lines+markers", name="Implied captured price",
+            line=dict(color="#e76f51"),
+        )
+        fig_ip.update_layout(
+            title="Implied captured price vs DAM price (production-weighted)",
+            xaxis_title="", yaxis_title="€/MWh", legend_title_text="",
+        )
+        st.plotly_chart(fig_ip, width="stretch")
+
+        # Spread distribution per park — box plot
+        fig_box = px.box(
+            ip, x="park_name", y="spread", color="park_name",
+            title="Spread distribution per park  (implied − DAM, €/MWh)",
+            labels={"spread": "Spread (€/MWh)", "park_name": "Park"},
+            color_discrete_sequence=PARK_COLORS,
+        )
+        fig_box.add_hline(y=0, line_dash="dash", line_color="black", opacity=0.4)
+        st.plotly_chart(fig_box, width="stretch")
+
+        if "Aiginio" in selected_parks:
+            st.caption(
+                "Aiginio: payment data is all-zero in the source file — its implied price "
+                "of €0/MWh reflects a data quality issue, not actual settlement. "
+                "Follow up with FORENA."
+            )
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # TAB 3 — CURTAILMENT IMPACT
 # ═══════════════════════════════════════════════════════════════════════════════
