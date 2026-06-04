@@ -7,26 +7,38 @@ PARKS = {
     "Mpountalas": {
         "file": os.path.join(_BASE, "MPOUNTALAS", "Mpountalas.csv"),
         "capacity_kw": 999.92,
+        "edreth": 26714,
+        "electrification_date": "08/11/2023",
     },
     "Agios Athanasios": {
         "file": os.path.join(_BASE, "AGIOS ATHANASIOS", "AGIOS ATHANASIOS.csv"),
         "capacity_kw": 1099.22,
+        "edreth": 26713,
+        "electrification_date": "07/03/2025",
     },
     "Aiginio": {
         "file": os.path.join(_BASE, "AIGINIO", "AIGINIO.csv"),
         "capacity_kw": 99.55,
+        "edreth": 26199,
+        "electrification_date": "20/07/2024",
     },
     "Deksameni Thourio": {
         "file": os.path.join(_BASE, "DEKSAMENI THOURIO", "DEKSAMENI THOURIO 26440.csv"),
         "capacity_kw": 99.96,
+        "edreth": 26440,
+        "electrification_date": "02/05/2024",
     },
     "Deksameni Arkates": {
         "file": os.path.join(_BASE, "DEKSAMENI ARKATES", "DEKSAMENI ARKATES.csv"),
         "capacity_kw": 99.96,
+        "edreth": 26284,
+        "electrification_date": "03/10/2024",
     },
     "Rousilakis Aspros": {
         "file": os.path.join(_BASE, "ROUSILAKIS ASPROS", "Rousilakis - Aspros.csv"),
         "capacity_kw": 99.63,
+        "edreth": 26180,
+        "electrification_date": "20/04/2023",
     },
 }
 

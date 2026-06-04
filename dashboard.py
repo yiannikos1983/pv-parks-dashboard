@@ -160,10 +160,19 @@ curt_df = get_curtailed_df(df, baseline)
 
 st.title("PV Parks Production Dashboard")
 st.caption(
-    f"{', '.join(selected_parks)}  |  "
-    f"{start_date.strftime('%d %b %Y')} – {end_date.strftime('%d %b %Y')}  |  "
-    f"{agg_option}"
+    f"{start_date.strftime('%d %b %Y')} – {end_date.strftime('%d %b %Y')}  |  {agg_option}"
 )
+
+park_meta = pd.DataFrame([
+    {
+        "Park": name,
+        "Capacity (kW)": PARKS[name]["capacity_kw"],
+        "ΕΔΡΕΘ": PARKS[name]["edreth"],
+        "Electrification date": PARKS[name]["electrification_date"],
+    }
+    for name in selected_parks
+])
+st.dataframe(park_meta, hide_index=True, width="stretch")
 
 tab1, tab2, tab3, tab4 = st.tabs(
     ["Production", "Revenue", "Curtailment", "DAM Price Exposure"]
