@@ -374,6 +374,14 @@ with tab2:
         kpi(c1, "Avg implied price (prod-weighted)", f"€ {w_implied:.2f}/MWh")
         kpi(c2, "Avg DAM price (prod-weighted)",     f"€ {w_dam:.2f}/MWh")
         kpi(c3, "Avg spread (implied − DAM)",        f"€ {w_spread:+.2f}/MWh")
+        st.caption(
+            "**Avg implied price** = Σ(payment\_eur) / Σ(production\_MWh) — "
+            "what you actually received per MWh after the FORENA fee and all settlement adjustments.   "
+            "**Avg DAM price** = Σ(DAM\_price × production\_kWh) / Σ(production\_kWh) — "
+            "gross market price per MWh injected, before any fees.   "
+            "**Spread** = implied − DAM; expected value is −€1.80/MWh (FORENA fee). "
+            "Deviations signal additional charges or data gaps."
+        )
 
         # Monthly production-weighted implied vs DAM price
         ip["prod_x_implied"] = ip["implied_price"] * ip["production_kwh"]
@@ -517,8 +525,8 @@ with tab3:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 with tab4:
-    # Only slots with production and a known DAM price
-    prod_slots = df[df["production_kwh"] > 0.1].dropna(subset=["dam_price"]).copy()
+    # Only slots with production and a known DAM price (threshold matches Revenue tab)
+    prod_slots = df[df["production_kwh"] > 0.5].dropna(subset=["dam_price"]).copy()
 
     if prod_slots.empty:
         st.info("No production slots with DAM price data in the selected period.")
@@ -552,17 +560,17 @@ with tab4:
         with c1:
             kpi(c1, "Implied net price", f"€ {implied_net:.2f}/MWh")
             st.caption(
-                "Total actual payments ÷ total production (MWh). "
-                "Represents what you effectively received per MWh after the FORENA fee "
-                "and all other deductions. Should track ~€1.80/MWh below the DAM price."
+                "**Formula:** Σ(payment\_eur) / Σ(production\_MWh)   "
+                "Net captured price after the FORENA fee and all settlement adjustments. "
+                "Identical to the Revenue tab's 'Avg implied price'."
             )
         with c2:
             kpi(c2, "Production-weighted avg DAM price", f"€ {w_avg_dam:.2f}/MWh")
             st.caption(
-                "Each slot's DAM price weighted by the MWh produced in that slot, "
-                "computed over the same slots as the implied net price. "
-                "Reflects the gross market price earned per MWh injected — before fees. "
-                "The gap vs implied net price is the effective fee per MWh."
+                "**Formula:** Σ(DAM\_price × production\_kWh) / Σ(production\_kWh)   "
+                "Gross market price per MWh injected, before fees. "
+                "Computed over the same slots as the implied net price. "
+                "Gap to implied net = effective fee per MWh (expected ~€1.80/MWh)."
             )
         kpi(c3, "Slots with negative price", f"{neg_pct:.1f}%\n({len(neg_slots):,} slots)")
         kpi(c4, "Slots with price < €20/MWh", f"{low_pct:.1f}%\n({len(low_slots):,} slots)")
